@@ -1,0 +1,103 @@
+name: Terraform - tfsec
+
+on:
+  workflow_call:
+    inputs:
+      tfsec_version:
+        type: string
+        required: false
+        default: latest
+        description: "(Optional) The version of `tfsec` to use. Defaults to `latest`."
+      tfsec_config_file:
+        type: string
+        required: false
+        description: "(Optional) The path to the `tfsec` config file."
+      tfsec_commenter_soft_fail_enabled:
+        type: boolean
+        required: false
+        default: true
+        description: "(Optional) Whether to comment silently without breaking the build. Defaults to `true`."
+      tfsec_sarif_enabled:
+        type: boolean
+        required: false
+        default: false
+        description: "(Optional) Whether to run the tfsec sarif check then add the report to the repository. Defaults to `false`."
+      tfsec_sarif_output_file:
+        type: string
+        required: false
+        default: tfsec.sarif
+        description: "(Optional) The path to SARIF file relative to the root of the repository. Defaults to `tfsec.sarif`."
+      tfsec_target_dir:
+        type: string
+        required: false
+        default: ./
+        description: "(Optional) A directory path to scan. Defaults to `./`."
+    outputs:
+      sarif_id:
+        description: "The ID of the uploaded SARIF file."
+        value: ${{ jobs.sarif.outputs.sarif_id }}
+
+jobs:
+  sarif:
+    name: tfsec - sarif report
+    if: ${{ inputs.tfsec_sarif_enabled }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+
+    - name: Run tfsec sarif check
+      id: tfsec-sarif
+      uses: aquasecurity/tfsec-sarif-action@v0.1.4
+      with:
+        sarif_file: ${{ inputs.tfsec_sarif_output_file }}
+        working_directory: ${{ inputs.tfsec_target_dir }}
+        tfsec_version: ${{ inputs.tfsec_version }}
+        config_file: ${{ inputs.tfsec_config_file }}
+
+    - name: Upload SARIF file
+      id: upload-sarif
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: ${{ inputs.tfsec_sarif_output_file }}
+
+    - name: Set outputs
+      id: set-outputs
+      run:
+        echo ::set-output name=sarif_id::${{ steps.upload-sarif.outputs.sarif-id }}
+
+    outputs:
+      sarif_id: ${{ steps.set-outputs.outputs.sarif_id }}
+
+  commenter:
+    name: tfsec - commenter
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+
+    - name: Add comments to PRs if tfsec checks have failed
+      id: tfsec-commenter
+      uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
+      with:
+        github_token: ${{ github.token }}
+        working_directory: ${{ inputs.tfsec_target_dir }}
+        tfsec_version: ${{ inputs.tfsec_version }}
+        soft_fail_commenter: ${{ inputs.tfsec_commenter_soft_fail_enabled }}
