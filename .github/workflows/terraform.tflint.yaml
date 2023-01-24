@@ -1,0 +1,39 @@
+name: Terraform - tflint
+
+on:
+  workflow_call:
+    inputs:
+      tflint_version:
+        type: string
+        required: false
+        default: latest
+        description: "(Optional) The version of `tflint` to install. Defaults to `latest`."
+      tflint_config_file:
+        type: string
+        required: false
+        description: "(Optional) The path to the `tflint` config file."
+
+jobs:
+  tflint:
+    name: tflint - Lint Terraform Codes
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup TFLint
+      id: setup-tflint
+      uses: terraform-linters/setup-tflint@v3
+      with:
+        tflint_version: ${{ inputs.tflint_version }}
+
+    - name: Init TFLint
+      id: init-tflint
+      run: |
+        tflint --version
+        tflint --init
+
+    - name: Run TFLint
+      id: run-tflint
+      run: tflint -f compact
