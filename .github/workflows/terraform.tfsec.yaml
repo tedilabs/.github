@@ -95,7 +95,7 @@ jobs:
 
     - name: Add comments to PRs if tfsec checks have failed
       id: tfsec-commenter
-      uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
+      uses: aquasecurity/tfsec-pr-commenter-action@v1.3.1
       with:
         github_token: ${{ github.token }}
         working_directory: ${{ inputs.tfsec_target_dir }}
