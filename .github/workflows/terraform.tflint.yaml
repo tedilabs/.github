@@ -11,7 +11,45 @@ on:
       tflint_config_file:
         type: string
         required: false
-        description: "(Optional) The path to the `tflint` config file."
+        default: ".tflint.hcl"
+        description: "(Optional) The path to the `tflint` config file. Defaults to `.tflint.hcl`."
+      tflint_minimum_failure_severity:
+        type: string
+        required: false
+        default: error
+        description: "(Optional) Set minimum severity for exiting with a non-zero error code. Valid values are `error`, `warning`, `notice`. Defaults to `error`."
+      tflint_terraform_init_enabled:
+        type: boolean
+        required: false
+        default: true
+        description: "(Optional) Whether to execute `terraform init` during tflint init process. Not implemented yet in recursive mode. Defaults to `true`."
+      tflint_recursive_enabled:
+        type: boolean
+        required: false
+        default: false
+        description: "(Optional) Whether to enable recursive inspection. It takes no arguments in recursive mode. Defaults to `false`."
+      tflint_target_dir:
+        type: string
+        required: false
+        default: ./
+        description: "(Optional) A directory path to scan. Defaults to `./`."
+      terraform_version:
+        type: string
+        required: false
+        default: latest
+        description: "(Optional) The version of Terraform CLI to install. Instead of full version string you can also specify constraint string starting with `<` (for example `<1.13.0`) to install the latest version satisfying the constraint. A value of `latest` will install the latest version of Terraform CLI. Defaults to `latest`."
+      terraform_host:
+        type: string
+        required: false
+        default: app.terraform.io
+        description: "(Optional) The hostname of a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file. Defaults to `app.terraform.io`."
+    secrets:
+      token:
+        required: true
+        description: "(Required) The GitHub API token to use when getting the latest version of tflint."
+      terraform_token:
+        required: false
+        description: "(Optional) The API token for a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file."
 
 jobs:
   tflint:
@@ -22,18 +60,68 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Setup Terraform
+      id: setup-terraform
+      uses: hashicorp/setup-terraform@v2
+      if: inputs.tflint_terraform_init_enabled
+      with:
+        cli_config_credentials_hostname: ${{ inputs.terraform_host }}
+        cli_config_credentials_token: ${{ secrets.terraform_token }}
+        terraform_version: ${{ inputs.terraform_version }}
+
     - name: Setup TFLint
       id: setup-tflint
       uses: terraform-linters/setup-tflint@v3
       with:
+        github_token: ${{ secrets.token }}
         tflint_version: ${{ inputs.tflint_version }}
 
     - name: Init TFLint
       id: init-tflint
+      env:
+        GITHUB_TOKEN: ${{ secrets.token }}
+        TFLINT_RECURSIVE_ENABLED: ${{ inputs.tflint_recursive_enabled }}
+        TFLINT_TERRAFORM_INIT_ENABLED: ${{ inputs.tflint_terraform_init_enabled }}
       run: |
-        tflint --version
-        tflint --init
+        TFLINT_CONFIG_FILE=$(realpath ${{ inputs.tflint_config_file }})
+
+        if [ $TFLINT_RECURSIVE_ENABLED == "true" ]
+        then
+          tflint --recursive --version
+          tflint \
+            --recursive \
+            --config ${TFLINT_CONFIG_FILE} \
+            --init
+        else
+          if [ $TFLINT_TERRAFORM_INIT_ENABLED == "true" ]
+          then
+            terraform -chdir=${{ inputs.tflint_target_dir }} init
+          fi
+
+          tflint --version
+          tflint \
+            --config ${TFLINT_CONFIG_FILE} \
+            --init
+        fi
 
     - name: Run TFLint
       id: run-tflint
-      run: tflint -f compact
+      env:
+        TFLINT_RECURSIVE_ENABLED: ${{ inputs.tflint_recursive_enabled }}
+      run: |
+        TFLINT_CONFIG_FILE=$(realpath ${{ inputs.tflint_config_file }})
+
+        if [ $TFLINT_RECURSIVE_ENABLED == "true" ]
+        then
+          tflint \
+            --minimum-failure-severity ${{ inputs.tflint_minimum_failure_severity }} \
+            --format compact \
+            --config ${TFLINT_CONFIG_FILE} \
+            --recursive
+        else
+          tflint \
+            --minimum-failure-severity ${{ inputs.tflint_minimum_failure_severity }} \
+            --format compact \
+            --chdir ${{ inputs.tflint_target_dir }} \
+            --config ${TFLINT_CONFIG_FILE}
+        fi
