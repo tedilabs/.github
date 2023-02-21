@@ -1,0 +1,42 @@
+name: YAML - yamllint
+
+on:
+  workflow_call:
+    inputs:
+      yamllint_version:
+        type: string
+        required: false
+        default: latest
+        description: "(Optional) The version of `yamllint` to install. Defaults to `latest`. Not implemented yet."
+      yamllint_config_file:
+        type: string
+        required: false
+        default: ".yamllint.yaml"
+        description: "(Optional) The path to the `yamllint` config file. Defaults to `.yamllint.yaml`."
+      yamllint_target_dir:
+        type: string
+        required: false
+        default: ./
+        description: "(Optional) A directory path to scan. Defaults to `./`."
+
+jobs:
+  yamllint:
+    name: yamllint - Lint YAML files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v3
+
+    - name: Install yamllint
+      id: install-yamllint
+      run: pip install yamllint
+
+    - name: Lint YAML Files
+      id: yaml-lint
+      run: |
+        yamllint \
+          --format github \
+          --config-file ${{ inputs.yamllint_config_file }} \
+          ${{ inputs.yamllint_target_dir }}
