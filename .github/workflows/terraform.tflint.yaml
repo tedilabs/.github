@@ -16,8 +16,8 @@ on:
       tflint_minimum_failure_severity:
         type: string
         required: false
-        default: error
-        description: "(Optional) Set minimum severity for exiting with a non-zero error code. Valid values are `error`, `warning`, `notice`. Defaults to `error`."
+        default: warning
+        description: "(Optional) Set minimum severity for exiting with a non-zero error code. Valid values are `error`, `warning`, `notice`. Defaults to `warning`."
       tflint_terraform_init_enabled:
         type: boolean
         required: false

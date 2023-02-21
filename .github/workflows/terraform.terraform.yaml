@@ -1,0 +1,57 @@
+name: Terraform - terraform
+
+on:
+  workflow_call:
+    inputs:
+      terraform_target_dir:
+        type: string
+        required: false
+        default: ./
+        description: "(Optional) A directory path to scan. Defaults to `./`."
+      terraform_version:
+        type: string
+        required: false
+        default: latest
+        description: "(Optional) The version of Terraform CLI to install. Instead of full version string you can also specify constraint string starting with `<` (for example `<1.13.0`) to install the latest version satisfying the constraint. A value of `latest` will install the latest version of Terraform CLI. Defaults to `latest`."
+      terraform_host:
+        type: string
+        required: false
+        default: app.terraform.io
+        description: "(Optional) The hostname of a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file. Defaults to `app.terraform.io`."
+    secrets:
+      terraform_token:
+        required: false
+        description: "(Optional) The API token for a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file."
+
+jobs:
+  terraform:
+    name: terraform - Validate Terraform Codes
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      id: setup-terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        cli_config_credentials_hostname: ${{ inputs.terraform_host }}
+        cli_config_credentials_token: ${{ secrets.terraform_token }}
+        terraform_version: ${{ inputs.terraform_version }}
+
+    - name: Terraform Format
+      id: terraform-format
+      run: |
+        terraform -chdir=${{ inputs.terraform_target_dir }} fmt \
+          -check \
+          -diff \
+          -no-color
+      continue-on-error: true
+
+    - name: Terraform Validate
+      id: terraform-validate
+      run: |
+        terraform -chdir=${{ inputs.terraform_target_dir }} init -backend=false
+        terraform -chdir=${{ inputs.terraform_target_dir }} validate -no-color
