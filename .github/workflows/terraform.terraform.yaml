@@ -19,6 +19,12 @@ on:
         default: app.terraform.io
         description: "(Optional) The hostname of a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file. Defaults to `app.terraform.io`."
     secrets:
+      gh_token:
+        required: false
+        description: "(Optional) The GitHub.com API token to use when communicating with GitHub.com API."
+      token:
+        required: false
+        description: "(Optional) The GitHub API token to use when communicating with GitHub API."
       terraform_token:
         required: false
         description: "(Optional) The API token for a Terraform Cloud/Enterprise instance to place within the credentials block of the Terraform CLI configuration file."

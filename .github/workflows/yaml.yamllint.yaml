@@ -18,6 +18,10 @@ on:
         required: false
         default: ./
         description: "(Optional) A directory path to scan. Defaults to `./`."
+    secrets:
+      token:
+        required: false
+        description: "(Optional) The GitHub API token to use when communicating with GitHub API."
 
 jobs:
   yamllint:
