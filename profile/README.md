@@ -1,3 +1,5 @@
+[![Hits](https://komarev.com/ghpvc/?username=tedilabs&color=red&label=Hits)](https://github.com/tedilabs)
+
 ## Who we are?
 
 :robot: Tedilabs is working to create a better way to create best practices for DevOps.
