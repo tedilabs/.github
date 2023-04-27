@@ -1,3 +1,4 @@
+[![GitHub Stars](https://img.shields.io/github/stars/tedilabs?style=social)](https://github.com/tedilabs)
 [![Hits](https://komarev.com/ghpvc/?username=tedilabs&color=red&label=Hits)](https://github.com/tedilabs)
 
 ## Who we are?
