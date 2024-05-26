@@ -1,0 +1,9 @@
+name: Check Org Compliance
+
+on: [pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo "Check Compilance"
